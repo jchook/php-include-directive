@@ -1,0 +1,94 @@
+#!/usr/bin/env php
+<?php
+
+if (!file_exists('./docker/part-1.docker')) {
+  echo "Sanity check failed";
+  exit;
+}
+
+// Gonna use this, even though you cannot mix positional args and options
+$rest = 0;
+$opt = getopt('o:', [], $rest);
+
+// Files to build
+$outs = (array) ($opt['o'] ?? []);
+$ins = array_slice($argv, $rest) ?: [ "Dockerfile.in" ];
+
+// Regex to capture filenames from #include statements
+const INCLUDE_PATTERN = '/^\s*#include\s+["]([^"]+)["]\s*$/im';
+const INCLUDE_PATTERN_PATH_INDEX = 1;
+
+function vlog($line) {
+  fwrite(STDERR, sprintf("%s\n", $line));
+}
+
+/**
+ * Includes can use turing-complete PHP code
+ */
+function read_include(string $in): string {
+  ob_start();
+  include $in;
+  return ob_get_clean();
+}
+
+function resolve_include(string $basedir, string $path, array $parents = []): string {
+  if (!$path) throw new Exception('Expected a path');
+
+  // Relative path?
+  $resolved = $path[0] !== '/'
+    ? $basedir . DIRECTORY_SEPARATOR . $path
+    : $path;
+
+  // File is readable
+  if (!file_exists($resolved)) {
+    throw new Exception("$resolved does not exist");
+  }
+  if (!is_readable($resolved)) {
+    throw new Exception("$resolved is not readable");
+  }
+
+  // Not a recursive include
+  if (in_array($resolved, $parents)) {
+    throw new Exception(
+      "Recusive include: " . implode(" -> ", $parents) . " -> $path"
+    );
+  }
+
+  return $resolved;
+}
+
+function make_file(string $in, ?string $out = null) {
+  $path = resolve_include('.', $in);
+  $ext = '/\\.[^.\\s]{1,16}$/';
+  if (!$out) {
+    $out = preg_match($ext, $path)
+      ? preg_replace($ext, '', $path)
+      : $path . '.out';
+  }
+  vlog(__FUNCTION__ . " $path -> $out");
+  file_put_contents($out, replace_includes($path));
+}
+
+function replace_includes(string $in, array $parents = []): string {
+  $data = read_include($in);
+  vlog(str_repeat(" | ", count($parents)) . " |-- " . "$in");
+  return preg_replace_callback(
+    INCLUDE_PATTERN,
+    function($matches) use ($in, $parents) {
+      $path = $matches[INCLUDE_PATTERN_PATH_INDEX];
+      $path = resolve_include(dirname($in), $path, $parents);
+      $prefix = "# INCLUDE $path\n";
+      $suffix = "# END $path\n";
+      return $prefix . replace_includes($path, array_merge($parents, [$path])) . $suffix;
+    },
+    $data,
+  );
+}
+
+
+// Do it
+foreach ($ins as $idx => $in) {
+  make_file($in, $outs[$idx] ?? null);
+}
+
+?>
