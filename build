@@ -15,7 +15,7 @@ $outs = (array) ($opt['o'] ?? []);
 $ins = array_slice($argv, $rest) ?: [ "Dockerfile.in" ];
 
 // Regex to capture filenames from #include statements
-const INCLUDE_PATTERN = '/^\s*#include\s+["]([^"]+)["]\s*$/im';
+const INCLUDE_PATTERN = '/^\s*#\s*include\s+["]([^"]+)["]\s*$/im';
 const INCLUDE_PATTERN_PATH_INDEX = 1;
 
 function vlog($line) {
@@ -77,7 +77,7 @@ function replace_includes(string $in, array $parents = []): string {
     function($matches) use ($in, $parents) {
       $path = $matches[INCLUDE_PATTERN_PATH_INDEX];
       $path = resolve_include(dirname($in), $path, $parents);
-      $prefix = "# INCLUDE $path\n";
+      $prefix = "# BEGIN $path\n";
       $suffix = "# END $path\n";
       return $prefix . replace_includes($path, array_merge($parents, [$path])) . $suffix;
     },

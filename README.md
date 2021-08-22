@@ -1,7 +1,7 @@
 PHP Include Directives
 ======================
 
-Allows you to write PHP code with `#include` directives similar to those
+Write PHP templates with `#include` directives similar to those
 processed by the C preprocessor, `cpp`.
 
 Also interprets all `<?php ?>` blocks.
@@ -10,19 +10,19 @@ Also interprets all `<?php ?>` blocks.
 Example
 -------
 
-Make a PHP file that can contain cpp-like #include directives.
+Make a file that can contain cpp-like #include directives.
 
 **Dockerfile.in**
 
-```php
+```dockerfile
 FROM alpine:3.14
 
 #include "php.dockerfile"
 #include "runit.dockerfile"
 
-<?php if ($_SERVER['DO_SPECIAL_THING'] ?? null): ?>
-#include "special.dockerfile"
-<?php endif; ?>
+#<?php if ($_SERVER['DO_SPECIAL_THING'] ?? null): ?>
+#  include "special.dockerfile"
+#<?php endif; ?>
 ```
 
 Then run the script to build it, similar to cpp.
