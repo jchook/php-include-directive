@@ -10,8 +10,9 @@ Also interprets all `<?php ?>` blocks.
 Example
 -------
 
-This example **Dockerfile.in**  includes a couple extra partial dockerfiles,
-then conditionally includes a 3rd partial dockerfile.
+Make a PHP file that can contain cpp-like #include directives.
+
+**Dockerfile.in**
 
 ```php
 FROM alpine:3.14
@@ -24,6 +25,13 @@ FROM alpine:3.14
 <?php endif; ?>
 ```
 
+Then run the script to build it, similar to cpp.
+
+```sh
+./build -o Dockerfile Dockerfile.in
+```
+
+
 Why?
 ----
 
@@ -35,11 +43,49 @@ directives](https://github.com/moby/moby/issues/735#issuecomment-37273719),
 but this has many issues:
 
 - Cannot use `# comments` at all, lol
-- The `cpp` manual mentions that it might choke on lexically non-C-like code
+- The `cpp` manual mentions that it might choke on lexically non-C code
 - Not a turing-complete preprocessor
 
-**With this script you get the best of the both worlds:**
+**This script lets you use both:**
 
-- Use cpp-like #include directives
-- Use PHP, a turing-complete, generally available templating language
+- cpp-like `#include` directives
+- Arbitrary PHP -- a turing-complete templating language
 
+
+Why not use plain ol' PHP?
+--------------------------
+
+For one you get to avoid cumbersome syntax. Comare the two...
+
+```dockerfile
+# PHP include:
+#<?php include __DIR__ . DIRECTORY_SEPARATOR . 'thing.dockerfile' ?>
+
+# CPP-like include
+#include "thing.dockerfile"
+```
+
+Using pure PHP has lots of awkward quirks too:
+
+- You need to comment out the include line to avoid raising syntax
+  errors or strange highlighting issues in your code editors / IDE.
+
+- Commenting out the include line means the first line of the included file
+  is commented out.
+
+- No automatic paper trail showing which code came from which include in the
+  output file(s).
+
+
+Caveat
+------
+
+If your Dockerfile or similar code contains the string `<?php` you PHP will
+interpret that. If you do not want this behavior, be sure to escape at least
+one of the characters, e.g. (notice the backslash):
+
+```dockerfile
+FROM alpine:3.14
+RUN apk add --no-cache php8 \
+  && echo "<\?php echo 'hello world';" > hello.php
+```
