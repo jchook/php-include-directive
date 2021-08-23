@@ -10,7 +10,7 @@ Also interprets all `<?php ?>` blocks.
 Example
 -------
 
-Make a file that can contain cpp-like #include directives.
+Make a file that can contain cpp-like #include directives and/or PHP templating.
 
 **Dockerfile.in**
 
@@ -31,7 +31,6 @@ Then run the script to build it, similar to cpp.
 ./build -o Dockerfile Dockerfile.in
 ```
 
-
 Why?
 ----
 
@@ -43,23 +42,26 @@ directives](https://github.com/moby/moby/issues/735#issuecomment-37273719),
 but this has many issues:
 
 - Cannot use `# comments` at all, lol
-- The `cpp` manual mentions that it might choke on lexically non-C code
+- The `cpp` manual mentions that it might choke on lexically non-C-like code
 - Not a turing-complete preprocessor
 
 **This script lets you use both:**
 
 - cpp-like `#include` directives
-- Arbitrary PHP -- a turing-complete templating language
+- arbitrary PHP code
 
 
 Why not use plain ol' PHP?
 --------------------------
 
-For one you get to avoid cumbersome syntax. Comare the two...
+PHP is a templating language. So it does gracefully solve this problem.
+
+But, what if we could avoid cumbersome syntax for 90% of our template needs?
+Compare the syntax for a simple relative include:
 
 ```dockerfile
 # PHP include:
-#<?php include __DIR__ . DIRECTORY_SEPARATOR . 'thing.dockerfile' ?>
+#<?php include __DIR__ . '/thing.dockerfile' ?>
 
 # CPP-like include
 #include "thing.dockerfile"
@@ -82,10 +84,4 @@ Caveat
 
 If your Dockerfile or similar code contains the string `<?php` you PHP will
 interpret that. If you do not want this behavior, be sure to escape at least
-one of the characters, e.g. (notice the backslash):
-
-```dockerfile
-FROM alpine:3.14
-RUN apk add --no-cache php8 \
-  && echo "<\?php echo 'hello world';" > hello.php
-```
+one of the characters.
