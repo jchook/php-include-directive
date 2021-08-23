@@ -1,18 +1,8 @@
-#!/usr/bin/env php
 <?php
 
-if (!file_exists('./docker/part-1.docker')) {
-  echo "Sanity check failed";
-  exit;
-}
+namespace Virtu\IncludeDirective;
 
-// Gonna use this, even though you cannot mix positional args and options
-$rest = 0;
-$opt = getopt('o:', [], $rest);
-
-// Files to build
-$outs = (array) ($opt['o'] ?? []);
-$ins = array_slice($argv, $rest) ?: [ "Dockerfile.in" ];
+use Exception;
 
 // Regex to capture filenames from #include statements
 const INCLUDE_PATTERN = '/^\s*#\s*include\s+["]([^"]+)["]\s*$/im';
@@ -85,10 +75,3 @@ function replace_includes(string $in, array $parents = []): string {
   );
 }
 
-
-// Do it
-foreach ($ins as $idx => $in) {
-  make_file($in, $outs[$idx] ?? null);
-}
-
-?>
