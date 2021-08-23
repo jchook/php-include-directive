@@ -1,2 +1,6 @@
+<<<<<<< HEAD
 /Dockerfile
 /docker/Dockerfile
+=======
+/vendor/
+>>>>>>> 63ceb61 (Turned it into a class)

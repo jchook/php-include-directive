@@ -1,0 +1,21 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__ . '/../vendor/autoload.php';
+
+// Gonna use getopt, even though you cannot mix positional args and options
+$rest = 0;
+$opt = getopt('o:', [], $rest);
+
+// Files to build
+$outs = (array) ($opt['o'] ?? []);
+$ins = array_slice($argv, $rest) ?: [];
+
+// Preprocessor
+$phpp = new Jchook\Phpp\Preprocessor();
+
+// Do it
+foreach ($ins as $idx => $in) {
+  $phpp->makeFile($in, $outs[$idx] ?? null);
+}
+

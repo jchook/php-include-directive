@@ -1,0 +1,19 @@
+{
+    "name": "jchook/phpp",
+    "description": "PHP Pre-processor that enables C-like #include directives",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Wes Roberts",
+            "email": "takq@a.zinc.email"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Jchook\\Phpp\\": "src/"
+        }
+    },
+    "minimum-stability": "dev",
+    "require": {}
+}
