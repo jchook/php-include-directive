@@ -1,11 +1,6 @@
 #!/usr/bin/env php
 <?php
 
-if (!file_exists('./docker/part-1.docker')) {
-  echo "Sanity check failed";
-  exit;
-}
-
 // Gonna use this, even though you cannot mix positional args and options
 $rest = 0;
 $opt = getopt('o:', [], $rest);
