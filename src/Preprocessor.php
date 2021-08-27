@@ -2,115 +2,127 @@
 
 namespace Jchook\Phpp;
 
-use Exception;
+use RuntimeException;
+
+require_once __DIR__ . '/Resolver.php';
+require_once __DIR__ . '/ResolverInterface.php';
+
+/**
+ * Preprocess files, resolving and replacing cpp-like #include directives,
+ * and optionally evaluating php code.
+ */
 
 class Preprocessor
 {
 
-  // Regex to capture filenames from #include statements
-  const INCLUDE_PATTERN = '/^\s*#\s*include\s+["]([^"]+)["]\s*$/im';
-  const INCLUDE_PATTERN_PATH_INDEX = 1;
+	// Regex to capture filenames from #include statements
+	const INCLUDE_PATTERN = '/^\s*#\s*include\s+["]([^"]+)["]\s*$/im';
+	const INCLUDE_PATTERN_PATH_INDEX = 1;
 
-  /**
-   * Output debug information
-   */
-  function vlog($line): void
-  {
-    fwrite(STDERR, sprintf("%s\n", $line));
-  }
+	protected ResolverInterface $resolver;
+	protected bool $eval;
+	protected bool $verbose;
 
-  /**
-   * Read a file to be included.
-   *
-   * TODO: There is an issue here... Should run all #include directives
-   * recursively, store the result in a file, then evaluate that file with PHP.
-   *
-   * OR DON'T! Could let the user run PHP on the result if they choose.
-   *
-   * OR leave it how it is. We know you have PHP!! You're running this file!
-   * Leaving it this way would let you have conditional #include statements.
-   * And if you cared about using PHP instead of directives, you could just
-   * use # <?php include ... ?> instead.
-   */
-  function readInclude(string $in): string
-  {
-    // return file_get_contents($in);
-    ob_start();
-    include $in;
-    return ob_get_clean();
-  }
+	/**
+	 * Configurable in PHP 8 style
+	 */
+	public function __construct(
+		?ResolverInterface $resolver = null,
+		bool $eval = false,
+		bool $verbose = false
+	)
+	{
+		$this->resolver = $resolver ?? new Resolver();
+		$this->eval = $eval;
+		$this->verbose = $verbose;
+	}
 
-  /**
-   * Given a base directory, resolve the path to an include.
-   * Also prevent recursive include loops by passing fully resolved parent
-   * includes.
-   */
-  function resolveInclude(
-    string $basedir,
-    string $path,
-    array $parents = []
-  ): string
-  {
-    if (!$path) throw new Exception('Expected a path');
+	/**
+	 * Make a file and output the result to a new file
+	 */
+	public function makeFile(string $in, ?string $out = null): void
+	{
+		$path = $this->resolver->resolveInclude('.', $in);
+		$ext = '/\\.[^.\\s]{1,16}$/';
+		if (!$out) {
+			$out = preg_match($ext, $path)
+				? preg_replace($ext, '', $path)
+				: $path . '.out';
+		}
+		$this->vlog(__FUNCTION__ . " $path -> $out");
+		file_put_contents($out, $this->replaceIncludes($path));
+	}
 
-    // Relative path?
-    $resolved = $path[0] !== '/'
-      ? $basedir . DIRECTORY_SEPARATOR . $path
-      : $path;
+	/**
+	 * Read a file to be included. Optionally evaluate it.
+	 */
+	protected function readInclude(string $in, ?bool $eval = null): string
+	{
+		if ($eval ?? $this->eval) {
+			ob_start();
+			include $in;
+			return ob_get_clean();
+		}
+		return file_get_contents($in);
+	}
 
-    // Canonicalize path
-    $resolved = realpath($resolved);
+	/**
+	 * Given an include file path, read it and replace all of the #include
+	 * directives with the contents of the file they reference.
+	 *
+	 * Optionally evaluates PHP code in the templates.
+	 */
+	protected function replaceIncludes(
+		string $in,
+		array $parents = [],
+		?bool $eval = null
+	): string
+	{
+		$data = $this->readInclude($in, $eval);
+		$this->vlog(str_repeat(" | ", count($parents)) . " |-- " . "$in");
+		return preg_replace_callback(
+			self::INCLUDE_PATTERN,
+			function($matches) use ($eval, $in, $parents) {
+				$path = $matches[self::INCLUDE_PATTERN_PATH_INDEX];
+				$resolved = $this->resolver->resolveInclude(dirname($in), $path);
+				$this->checkInclude($resolved, $parents);
+				$prefix = "# BEGIN $path\n";
+				$suffix = "\n# END $path\n";
+				$nextParents = array_merge($parents, [$resolved]);
+				return $prefix
+					. $this->replaceIncludes($resolved, $nextParents, $eval)
+					. $suffix;
+			},
+			$data,
+		);
+	}
 
-    // File exists?
-    if (!$resolved) {
-      throw new Exception("$path does not exist");
-    }
+	protected function checkInclude(string $resolved, array $parents = []): string
+	{
+		// Can read it?
+		if (!is_readable($resolved)) {
+			throw new RuntimeException("$resolved is not readable");
+		}
 
-    // Can read it?
-    if (!is_readable($resolved)) {
-      throw new Exception("$resolved is not readable");
-    }
+		// Not a recursive include
+		if (in_array($resolved, $parents)) {
+			throw new RuntimeException(
+				"Recusive include: " . implode(" -> ", $parents) . " -> $resolved"
+			);
+		}
 
-    // Not a recursive include
-    if (in_array($resolved, $parents)) {
-      throw new Exception(
-        "Recusive include: " . implode(" -> ", $parents) . " -> $path"
-      );
-    }
+		return $resolved;
+	}
 
-    return $resolved;
-  }
-
-  function makeFile(string $in, ?string $out = null): void
-  {
-    $path = $this->resolveInclude('.', $in);
-    $ext = '/\\.[^.\\s]{1,16}$/';
-    if (!$out) {
-      $out = preg_match($ext, $path)
-        ? preg_replace($ext, '', $path)
-        : $path . '.out';
-    }
-    $this->vlog(__FUNCTION__ . " $path -> $out");
-    file_put_contents($out, $this->replaceIncludes($path));
-  }
-
-  function replaceIncludes(string $in, array $parents = []): string
-  {
-    $data = $this->readInclude($in);
-    $this->vlog(str_repeat(" | ", count($parents)) . " |-- " . "$in");
-    return preg_replace_callback(
-      self::INCLUDE_PATTERN,
-      function($matches) use ($in, $parents) {
-        $path = $matches[self::INCLUDE_PATTERN_PATH_INDEX];
-        $path = $this->resolveInclude(dirname($in), $path, $parents);
-        $prefix = "# BEGIN $path\n";
-        $suffix = "# END $path\n";
-        return $prefix
-          . $this->replaceIncludes($path, array_merge($parents, [$path]))
-          . $suffix;
-      },
-      $data,
-    );
-  }
+	/**
+	 * Output debug information
+	 */
+	protected function vlog($line): void
+	{
+		if ($this->verbose) {
+			fwrite(STDERR, sprintf("%s\n", $line));
+		}
+	}
 
 }
+

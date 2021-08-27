@@ -1,10 +1,10 @@
-PHP Include Directives
-======================
+PHP Preprocessor
+================
 
-Write PHP templates with `#include` directives similar to those
-processed by the C preprocessor, `cpp`.
+Write PHP templates with `#include` directives similar to those processed by
+the C preprocessor, `cpp`.
 
-Also interprets all `<?php ?>` blocks.
+Also optionally evaluates `<?php ?>` blocks.
 
 
 Example
@@ -28,7 +28,7 @@ FROM alpine:3.14
 Then run the script to build it, similar to cpp.
 
 ```sh
-./build -o Dockerfile Dockerfile.in
+phpp -o Dockerfile Dockerfile.in
 ```
 
 Why?
@@ -39,16 +39,13 @@ Dockerfiles do not allow you to `INCLUDE` other Dockerfiles. This is a
 
 Folks have suggested [using cpp to translate `#include`
 directives](https://github.com/moby/moby/issues/735#issuecomment-37273719),
-but this has many issues:
+but this has critical issues:
 
-- Cannot use `# comments` at all, lol
-- The `cpp` manual mentions that it might choke on lexically non-C-like code
-- Not a turing-complete preprocessor
+- Cannot use normal `# comments`, as ccp will throw an error
+- The `cpp` manual warns against using it for non-C code
 
-**This script lets you use both:**
-
-- cpp-like `#include` directives
-- arbitrary PHP code
+This tool leverages PHP (a powerful, turing-complete templating language) to
+provide a complete templating solution with a familiar #include shortcut.
 
 
 Why not use plain ol' PHP?
@@ -67,7 +64,7 @@ Compare the syntax for a simple relative include:
 #include "thing.dockerfile"
 ```
 
-Using pure PHP has lots of awkward quirks too:
+Using "just PHP" presents some awkward quirks:
 
 - You need to comment out the include line to avoid raising syntax
   errors or strange highlighting issues in your code editors / IDE.
@@ -84,4 +81,4 @@ Caveat
 
 If your Dockerfile or similar code contains the string `<?php` you PHP will
 interpret that. If you do not want this behavior, be sure to escape at least
-one of the characters.
+one of the characters or turn off `eval` mode.
