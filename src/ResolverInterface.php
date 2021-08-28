@@ -2,17 +2,17 @@
 
 namespace Jchook\Phpp;
 
-use Exception;
+use RuntimeException;
 
 interface ResolverInterface
 {
   /**
-   * @param string $include Path to an included file
    * @param string $basedir Resolve relative to this directory
-   * @throws Exception
+   * @param string $path Path to an included file
+   * @throws RuntimeException
    */
   public function resolveInclude(
-    string $path,
-    string $basedir
+    string $basedir,
+    string $path
   ): string;
 }

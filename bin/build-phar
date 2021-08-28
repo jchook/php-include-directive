@@ -62,7 +62,7 @@ $stub = <<<'EOF'
 /*
  * This file is part of phpp.
  *
- * Copyright Wesley Roberts <takq@proxyto.me>
+ * Copyright Wesley Roberts <takq@a.zinc.email>
  *
  * For the full copyright and license information, please view
  * the license that is located at the bottom of this file.
