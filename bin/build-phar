@@ -1,0 +1,72 @@
+#!/usr/bin/env php
+<?php
+
+$startTime = microtime(true);
+
+$opt = getopt('v', ['no-bundle']);
+
+if (ini_get('phar.readonly')) {
+  echo "phar.readonly = " . var_export(ini_get('phar.readonly'), true) . "\n";
+  if (ini_set("phar.readonly", 0) === false) {
+    echo "Failed to set phar.readonly\n";
+    exit;
+  }
+}
+
+$baseDir = dirname(__DIR__);
+$vendorDir = $baseDir . '/vendor';
+$srcDir = $baseDir . '/src';
+$distDir = $baseDir . '/dist';
+$pharFile = $distDir . '/phpp.phar';
+
+// Clean-up any residual builds
+if (file_exists($pharFile)) {
+  unlink($pharFile);
+}
+
+// We're going to stack a bunch of iterators together
+$tree = new AppendIterator();
+
+// src
+$tree->append(new RegexIterator(
+  new RecursiveIteratorIterator(new RecursiveDirectoryIterator($srcDir)),
+  '/\.php$/'
+));
+
+// vendor
+$tree->append(new RegexIterator(
+  new RecursiveIteratorIterator(new RecursiveDirectoryIterator($vendorDir)),
+  '/\.php$/'
+));
+
+
+// Verbose?
+if (isset($opt['v'])) {
+  echo "Full tree:\n";
+  foreach ($tree as $leaf) {
+    echo "$leaf\n";
+  }
+}
+
+// Make sure dest dir exists
+if (!is_dir(dirname($distDir))) {
+  mkdir(dirname($distDir), 0755, true);
+}
+
+$stub = '#!/usr/bin/env php' . "\n" . Phar::createDefaultStub('src/phpp.php', 'src/phpp.php');
+
+// Bundle as Phar
+$phar = new Phar($pharFile);
+$phar->setSignatureAlgorithm(\Phar::SHA512);
+$phar->setStub($stub);
+// $phar->setDefaultStub('bin/phpp');
+// $phar->compressFiles(Phar::GZ);
+// $phar->convertToExecutable(Phar::PHAR, Phar::NONE);
+$phar->buildFromIterator($tree, $baseDir);
+
+
+// Add executable flag
+chmod($pharFile, 0755);
+
+echo 'PHAR built in ' . number_format(microtime(true) - $startTime, 2) . " seconds.\n";
+

@@ -16,5 +16,10 @@
     },
     "bin": ["bin/phpp"],
     "minimum-stability": "dev",
-    "require": {}
+    "require": {
+        "php": ">=7.0"
+    },
+    "scripts": {
+        "build": "php -dphar.readonly=0 bin/build-phar"
+    }
 }
