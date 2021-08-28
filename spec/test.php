@@ -2,8 +2,7 @@
 
 namespace Jchook\Phpp;
 
-require_once __DIR__ . '/../src/Preprocessor.php';
-require_once __DIR__ . '/../src/Resolver.php';
+require_once __DIR__ . '/../src/autoload.php';
 
 function join(...$paths): string {
 	return implode(DIRECTORY_SEPARATOR, $paths);
