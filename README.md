@@ -2,7 +2,7 @@ PHP Preprocessor
 ================
 
 Write PHP templates with `#include` directives similar to those processed by
-the C preprocessor `cpp` and macro engines like `m4`.
+the C preprocessor.
 
 Also optionally evaluates `<?php ?>` blocks.
 
@@ -40,8 +40,8 @@ Then run the script to build it, similar to cpp.
 phpp -o Dockerfile Dockerfile.in
 ```
 
-Command-Line Interface
-----------------------
+Command-Line Usage
+------------------
 
 ```
 USAGE
@@ -82,15 +82,15 @@ Motivation
 Dockerfiles do not allow you to `INCLUDE` other Dockerfiles. This is a
 [known and embraced limitation](https://github.com/moby/moby/issues/735).
 
-Folks have suggested [using cpp to translate `#include`
+Folks have suggested [using cpp to translate #include
 directives](https://github.com/moby/moby/issues/735#issuecomment-37273719),
 but this has critical issues:
 
-- Cannot use normal `# comments`, as ccp will throw an error
-- The `cpp` manual warns against using it for non-C code
+- Cannot use normal # comments, as ccp will throw an error
+- The cpp manual warns against using it for non-C code
 
 This tool leverages PHP (a powerful, turing-complete templating language) to
-provide a complete templating solution with a familiar `#include` shortcut.
+provide a complete templating solution with a familiar #include shortcut.
 
 
 ### Why not use plain ol' PHP?
