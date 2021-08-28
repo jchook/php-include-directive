@@ -3,8 +3,17 @@
 
 $startTime = microtime(true);
 
-$opt = getopt('v', ['no-bundle']);
+// Paths
+$baseDir = dirname(__DIR__);
+$srcDir = $baseDir . '/src';
+$distDir = $baseDir . '/dist';
+$pharFile = $distDir . '/phpp.phar';
+$licenseFile = $baseDir . '/LICENSE';
 
+// CLI options
+$opt = getopt('v', []);
+
+// Building a phar requires this setting
 if (ini_get('phar.readonly')) {
   echo "phar.readonly = " . var_export(ini_get('phar.readonly'), true) . "\n";
   if (ini_set("phar.readonly", 0) === false) {
@@ -13,41 +22,15 @@ if (ini_get('phar.readonly')) {
   }
 }
 
-$baseDir = dirname(__DIR__);
-$vendorDir = $baseDir . '/vendor';
-$srcDir = $baseDir . '/src';
-$distDir = $baseDir . '/dist';
-$pharFile = $distDir . '/phpp.phar';
-$licenseFile = $baseDir . '/LICENSE';
-
 // Clean-up any residual builds
 if (file_exists($pharFile)) {
   unlink($pharFile);
-}
-
-// We're going to stack a bunch of iterators together
-$tree = new AppendIterator();
-
-// src
-$tree->append(new RegexIterator(
-  new RecursiveIteratorIterator(new RecursiveDirectoryIterator($srcDir)),
-  '/\.php$/'
-));
-
-// Verbose?
-if (isset($opt['v'])) {
-  echo "Full tree:\n";
-  foreach ($tree as $leaf) {
-    echo "$leaf\n";
-  }
 }
 
 // Make sure dest dir exists
 if (!is_dir($distDir)) {
   mkdir($distDir, 0755, true);
 }
-
-$stub = '#!/usr/bin/env php' . "\n" . Phar::createDefaultStub('src/phpp.php', 'src/phpp.php');
 
 $stub = <<<'EOF'
 #!/usr/bin/env php
@@ -69,12 +52,9 @@ EOF;
 $phar = new Phar($pharFile);
 $phar->setSignatureAlgorithm(\Phar::SHA256);
 $phar->setStub($stub);
+$phar->buildFromDirectory($baseDir, '#/src/.+$#');
 $phar->addFile($licenseFile);
-$phar->buildFromIterator($tree, $baseDir);
-
 
 // Add executable flag
 chmod($pharFile, 0755);
-
-echo 'PHAR built in ' . number_format(microtime(true) - $startTime, 2) . " seconds.\n";
 

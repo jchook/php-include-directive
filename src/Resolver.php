@@ -4,8 +4,6 @@ namespace Jchook\Phpp;
 
 use RuntimeException;
 
-require_once __DIR__ . '/ResolverInterface.php';
-
 class Resolver implements ResolverInterface
 {
 	protected array $tryPaths;

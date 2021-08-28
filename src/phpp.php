@@ -3,8 +3,10 @@
 use Jchook\Phpp\Preprocessor;
 use Jchook\Phpp\Resolver;
 
-require_once __DIR__ . '/Preprocessor.php';
+// Removing composer's autoloader saves 73% on total phar size
+require_once __DIR__ . '/ResolverInterface.php';
 require_once __DIR__ . '/Resolver.php';
+require_once __DIR__ . '/Preprocessor.php';
 
 // Gonna use getopt, even though you cannot mix positional args and options
 $rest = 0;
