@@ -34,13 +34,6 @@ $tree->append(new RegexIterator(
   '/\.php$/'
 ));
 
-// vendor
-$tree->append(new RegexIterator(
-  new RecursiveIteratorIterator(new RecursiveDirectoryIterator($vendorDir)),
-  '/\.php$/'
-));
-
-
 // Verbose?
 if (isset($opt['v'])) {
   echo "Full tree:\n";
@@ -74,11 +67,8 @@ EOF;
 
 // Bundle as Phar
 $phar = new Phar($pharFile);
-$phar->setSignatureAlgorithm(\Phar::SHA512);
+$phar->setSignatureAlgorithm(\Phar::SHA256);
 $phar->setStub($stub);
-// $phar->setDefaultStub('bin/phpp');
-// $phar->compressFiles(Phar::GZ);
-// $phar->convertToExecutable(Phar::PHAR, Phar::NONE);
 $phar->addFile($licenseFile);
 $phar->buildFromIterator($tree, $baseDir);
 

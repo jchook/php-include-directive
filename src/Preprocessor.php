@@ -5,7 +5,6 @@ namespace Jchook\Phpp;
 use RuntimeException;
 
 require_once __DIR__ . '/Resolver.php';
-require_once __DIR__ . '/ResolverInterface.php';
 
 /**
  * Preprocess files, resolving and replacing cpp-like #include directives,

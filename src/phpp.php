@@ -3,7 +3,8 @@
 use Jchook\Phpp\Preprocessor;
 use Jchook\Phpp\Resolver;
 
-require __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/Preprocessor.php';
+require_once __DIR__ . '/Resolver.php';
 
 // Gonna use getopt, even though you cannot mix positional args and options
 $rest = 0;
