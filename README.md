@@ -2,9 +2,22 @@ PHP Preprocessor
 ================
 
 Write PHP templates with `#include` directives similar to those processed by
-the C preprocessor, `cpp`.
+the C preprocessor `cpp` and macro engines like `m4`.
 
 Also optionally evaluates `<?php ?>` blocks.
+
+
+Install
+-------
+
+If you want to use composer:
+
+```sh
+composer require-dev jchook/phpp
+```
+
+**or** [download the phar](https://github.com/jchook/php-include-directive/releases)
+and include it in your project
 
 
 Example
@@ -19,10 +32,6 @@ FROM alpine:3.14
 
 #include "php.dockerfile"
 #include "runit.dockerfile"
-
-#<?php if ($_SERVER['DO_SPECIAL_THING'] ?? null): ?>
-#  include "special.dockerfile"
-#<?php endif; ?>
 ```
 
 Then run the script to build it, similar to cpp.
@@ -31,8 +40,44 @@ Then run the script to build it, similar to cpp.
 phpp -o Dockerfile Dockerfile.in
 ```
 
-Why?
-----
+Command-Line Interface
+----------------------
+
+```
+USAGE
+
+  phpp [options] PATH...
+
+OPTIONS
+
+  -h, --help  Show this help info
+  -o PATH     Output processed file to PATH. (multi)
+  -I PATH     Look here for included files (multi)
+  --ext       Look for files with this extension (multi)
+  --eval      Evaluate PHP in included files
+  -v          Verbose mode
+```
+
+Options labeled (multi) can be invoked multiple times.
+
+
+PHP Interface
+-------------
+
+See the source code for more info. Here's a simple example:
+
+```php
+<?php
+
+use Jchook\Phpp\Preprocessor;
+
+$pre = new Preprocessor();
+$pre->makeFile('Dockerfile.in');
+```
+
+
+Motivation
+----------
 
 Dockerfiles do not allow you to `INCLUDE` other Dockerfiles. This is a
 [known and embraced limitation](https://github.com/moby/moby/issues/735).
@@ -45,16 +90,12 @@ but this has critical issues:
 - The `cpp` manual warns against using it for non-C code
 
 This tool leverages PHP (a powerful, turing-complete templating language) to
-provide a complete templating solution with a familiar #include shortcut.
+provide a complete templating solution with a familiar `#include` shortcut.
 
 
-Why not use plain ol' PHP?
---------------------------
+### Why not use plain ol' PHP?
 
-PHP is a templating language. So it does gracefully solve this problem.
-
-But, what if we could avoid cumbersome syntax for 90% of our template needs?
-Compare the syntax for a simple relative include:
+Consider these two examples in a Dockerfile side-by-side:
 
 ```dockerfile
 # PHP include:
@@ -66,7 +107,7 @@ Compare the syntax for a simple relative include:
 
 Using "just PHP" presents some awkward quirks:
 
-- You need to comment out the include line to avoid raising syntax
+- Ideally you can comment out the include line to avoid raising syntax
   errors or strange highlighting issues in your code editors / IDE.
 
 - Commenting out the include line means the first line of the included file
@@ -75,10 +116,12 @@ Using "just PHP" presents some awkward quirks:
 - No automatic paper trail showing which code came from which include in the
   output file(s).
 
+- More cumbersome syntax, requiring more explicit include paths.
+
 
 Caveat
 ------
 
 If your Dockerfile or similar code contains the string `<?php` you PHP will
 interpret that. If you do not want this behavior, be sure to escape at least
-one of the characters or turn off `eval` mode.
+one of the characters or disable `eval` mode.

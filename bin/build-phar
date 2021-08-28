@@ -18,6 +18,7 @@ $vendorDir = $baseDir . '/vendor';
 $srcDir = $baseDir . '/src';
 $distDir = $baseDir . '/dist';
 $pharFile = $distDir . '/phpp.phar';
+$licenseFile = $baseDir . '/LICENSE';
 
 // Clean-up any residual builds
 if (file_exists($pharFile)) {
@@ -55,6 +56,22 @@ if (!is_dir($distDir)) {
 
 $stub = '#!/usr/bin/env php' . "\n" . Phar::createDefaultStub('src/phpp.php', 'src/phpp.php');
 
+$stub = <<<'EOF'
+#!/usr/bin/env php
+<?php
+/*
+ * This file is part of phpp.
+ *
+ * Copyright Wesley Roberts <takq@proxyto.me>
+ *
+ * For the full copyright and license information, please view
+ * the license that is located at the bottom of this file.
+ */
+Phar::mapPhar('phpp.phar');
+require 'phar://phpp.phar/src/phpp.php';
+__HALT_COMPILER();
+EOF;
+
 // Bundle as Phar
 $phar = new Phar($pharFile);
 $phar->setSignatureAlgorithm(\Phar::SHA512);
@@ -62,6 +79,7 @@ $phar->setStub($stub);
 // $phar->setDefaultStub('bin/phpp');
 // $phar->compressFiles(Phar::GZ);
 // $phar->convertToExecutable(Phar::PHAR, Phar::NONE);
+$phar->addFile($licenseFile);
 $phar->buildFromIterator($tree, $baseDir);
 
 
