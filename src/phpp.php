@@ -7,7 +7,7 @@ require_once __DIR__ . '/autoload.php';
 
 // Gonna use getopt, even though you cannot mix positional args and options
 $rest = 0;
-$opt = getopt('hI:o:v', ['eval', 'ext', 'help'], $rest);
+$opt = getopt('hI:o:v', ['eval', 'ext:', 'help'], $rest);
 
 // Files to build
 $outs = (array) ($opt['o'] ?? []);
